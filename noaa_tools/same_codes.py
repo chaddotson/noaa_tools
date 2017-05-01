@@ -1,12 +1,11 @@
 from logging import getLogger
-import requests
+from os.path import join, dirname, realpath
 
-from noaa_tools.errors import FailedToLoadNWSSameCodesMap
-from noaa_tools.geo import convert_lat_lon_to_geopy_location, get_county_state_zip_from_location
+from noaa_tools.geo import get_us_location_from_lat_lon
 
 logger = getLogger(__name__)
 
-nws_same_code_url="http://www.nws.noaa.gov/nwr/data/SameCode.txt"
+# NOAA Same Code URL: http://www.nws.noaa.gov/nwr/data/SameCode.txt
 
 states = {
     'ak': 'alaska',
@@ -135,11 +134,13 @@ class SameCodeIndex(object):
         state = state.strip(' ').lower()
 
         if state not in self._map:
-            self._map[state] = {}
+            self._map[state.lower()] = {}
 
         self._map[state][county] = same_code
 
     def find_same_code(self, state, county):
+        state = state.lower()
+        county = county.lower().split(' ')[0]
 
         if len(state) != 2:
             state = states[state]
@@ -147,39 +148,37 @@ class SameCodeIndex(object):
         return self._map[state][county]
 
 
-def get_nws_same_codes_map():
+def load_nws_same_code_index():
 
-    response = requests.get(nws_same_code_url);
+    if load_nws_same_code_index.__index__ is not None:
+        return load_nws_same_code_index.__index__
 
-    if response.status_code != 200:
-        e = FailedToLoadNWSSameCodesMap(response.status_code)
-        logger.exception(e)
-        raise e
+    same_code_file = join(dirname(realpath(__file__)), "resources", "noaa_same_codes.txt")
 
-    # TODO: what to do when it fails!
+    content = []
 
-    content = response.text.splitlines()
+    with open(same_code_file, "r") as f:
+        content = f.readlines()
 
-    same_code_index = SameCodeIndex()
+    load_nws_same_code_index.__index__ = SameCodeIndex()
     for entry in content:
-        same_code, county, state = entry.split(',')
-        same_code = same_code.strip(' ').lower()
-        county = county.strip(' ').lower()
-        state = state.strip(' ').lower()
 
-        same_code_index.add(state, county, same_code)
+        same_code, county, state = entry.strip().lower().split(',')
+        same_code = same_code.strip(' ')
+        county = county.strip(' ')
+        state = state.strip(' ')
 
-    return same_code_index
+        load_nws_same_code_index.__index__.add(state, county, same_code)
+
+    return load_nws_same_code_index.__index__
+
+load_nws_same_code_index.__index__ = None
 
 
-def get_same_code_for_lat_lon(lat_lon_as_string):
-    location = convert_lat_lon_to_geopy_location(lat_lon_as_string)
-    county, state, zip_code = get_county_state_zip_from_location(location)
+def get_same_code_for_lat_lon(lat, lon):
+    location = get_us_location_from_lat_lon(lat, lon)
 
-    county = county.replace("County",'').strip(' ').lower()
-    state = state.strip(' ').lower()
-    zip_code = zip_code.strip(' ')
+    same_code_by_state_and_county = load_nws_same_code_index()
 
-    same_code_by_state_and_county = get_nws_same_codes_map()
+    return same_code_by_state_and_county.find_same_code(location.state, location.county)
 
-    return same_code_by_state_and_county.find_same_code(state, county)
