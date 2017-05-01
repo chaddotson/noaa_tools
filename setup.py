@@ -16,7 +16,7 @@ setup(name='noaa_tools',
       version=version,
       author="Chad Dotson",
       author_email="chad@cdotson.com",
-      description="Utilities for fetching/processing data from noaa, including tools for downloading and overlaying "
+      description="Utilities for fetching/processing data from NOAA, including tools for downloading and overlaying "
                   "radar images from the Ridge radar sites.",
       license="GNUv3",
       keywords=["noaa", "radar", "tools", "weather"],
