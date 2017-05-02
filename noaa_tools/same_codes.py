@@ -124,6 +124,7 @@ states = {
     'wyoming': 'wy'
 }
 
+
 class SameCodeIndex(object):
     def __init__(self):
         self._map = {}
