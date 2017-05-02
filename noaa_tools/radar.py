@@ -1,10 +1,20 @@
+from io import BytesIO
 from logging import getLogger
 from PIL import Image
-from noaa_tools.utilities import get_image_from_url
+from requests import get
 
 __author__ = 'Chad Dotson'
 
 logger = getLogger(__name__)
+
+
+def get_image_from_url(url):
+    logger.debug("Fetching image: %s", url)
+    response = get(url, headers={
+        'User-agent': 'Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)'
+    })
+
+    return Image.open(BytesIO(response.content))
 
 
 class Radar:
