@@ -1,19 +1,13 @@
-from six.moves import cStringIO
-
-try:
-    from urllib2 import build_opener
-except ImportError:
-    from urllib.request import build_opener
-
+from io import BytesIO
 from PIL import Image
+from requests import get
 
 __author__ = 'Chad Dotson'
 
-import io
 
 def get_image_from_url(url):
-    opener = build_opener()
-    opener.addheaders = [('User-agent', 'Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)')]
-    response = opener.open(url)
-    #im = cStringIO(response.read())
-    return Image.open(io.BytesIO(response.read()))
+    response = get(url, headers={
+        'User-agent': 'Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)'
+    })
+
+    return Image.open(BytesIO(response.content))
