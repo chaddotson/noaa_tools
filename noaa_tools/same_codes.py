@@ -1,6 +1,7 @@
 from logging import getLogger
 from os.path import join, dirname, realpath
 
+from six import PY3
 from noaa_tools.geo import get_us_location_from_lat_lon
 
 logger = getLogger(__name__)
@@ -124,6 +125,13 @@ states = {
     'wyoming': 'wy'
 }
 
+same_code_file = join(dirname(realpath(__file__)), "resources", "noaa_same_codes.txt")
+
+
+class FailedToLoadNWSSameCodesMap(RuntimeError):
+    def __init__(self):
+        super(RuntimeError, self).__init__("Failed to load NWS same code map.  File: {0}".format(same_code_file))
+
 
 class SameCodeIndex(object):
     def __init__(self):
@@ -154,12 +162,18 @@ def load_nws_same_code_index():
     if load_nws_same_code_index.__index__ is not None:
         return load_nws_same_code_index.__index__
 
-    same_code_file = join(dirname(realpath(__file__)), "resources", "noaa_same_codes.txt")
-
     content = []
 
-    with open(same_code_file, "r") as f:
-        content = f.readlines()
+    try:
+        with open(same_code_file, "r") as f:
+            content = f.readlines()
+
+    except FileNotFoundError as e:
+        if PY3:
+            raise FailedToLoadNWSSameCodesMap() from None
+
+        raise FailedToLoadNWSSameCodesMap()
+
 
     load_nws_same_code_index.__index__ = SameCodeIndex()
     for entry in content:
